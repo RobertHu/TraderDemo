@@ -39,7 +39,6 @@ public class TraderTest {
 			Initialize();
 			loadAccount();
 			final Random random = new Random();
-			System.out.println("---------started-------------------");
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			int maxLoginClient = 1;
 			if (args != null && args.length > 0) {
