@@ -91,7 +91,7 @@ public class TraderTest {
 								waitEvent.notify();
 							}
 							System.out.println(String
-									.format("%d clients logined. maxCostTime:%d, avgCostTime:%d, minCostTime:%d",
+									.format("%d clients logined,costTime: max:%d, avg:%d, min:%d",
 											costTimes[3], costTimes[0],
 											costTimes[1], costTimes[2]));
 							System.in.read();

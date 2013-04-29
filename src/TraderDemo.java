@@ -31,6 +31,7 @@ public class TraderDemo implements Observer {
 	private InputStream inputStream;
 	private OutputStream outputStream;
 	private long costTime=0;
+	private volatile boolean isClosed=false;
 	
 	
 	public TraderDemo(String ip,int port) {
@@ -67,7 +68,11 @@ public class TraderDemo implements Observer {
 	
 	private void close() {
 		try {
+			if(this.isClosed){
+				return;
+			}
 			this.connection.getSocket().close();
+			this.isClosed=true;
 		} catch (Exception e) {
 			System.out.println("close socket");
 		}
@@ -81,6 +86,7 @@ public class TraderDemo implements Observer {
 			loginService.login(loginName,password,"",appType);
 		    GetInitDataService getInitDataService=new GetInitDataService(this.outputStream,loginInfoManager);
 			getInitDataService.getInitData();
+			this.aliveKeeper.addObserver(this);
 			aliveKeeper.start();
 			this.costTime = System.currentTimeMillis() - beginTime;
 		} catch (Exception e) {
