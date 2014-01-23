@@ -1,5 +1,6 @@
 package BLL;
 
+import java.awt.print.Printable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -7,6 +8,7 @@ import java.io.OutputStream;
 import org.apache.log4j.Logger;
 
 import Util.IntegerHelper;
+import Util.PriceEncoding;
 
 public class MsgParser implements Runnable {
 	
@@ -41,7 +43,8 @@ public class MsgParser implements Runnable {
 				}
 				int count=0;
 				while(count!=PacketContants.HeadTotalLength){
-					count+=stream.read(headerBuf, count, PacketContants.HeadTotalLength - count);
+					int readed=stream.read(headerBuf, count, PacketContants.HeadTotalLength - count);
+					count = count + readed;
 				}
 				int packetLength = getPacketLength(headerBuf, 0);
 				int leftLength = packetLength - PacketContants.HeadTotalLength;
@@ -53,8 +56,7 @@ public class MsgParser implements Runnable {
 			}
 			
 		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error(e);
+			logger.error("read error",e);
 		}
 	}
 	
@@ -77,12 +79,21 @@ public class MsgParser implements Runnable {
 				PacketContants.ContentHeaderLength);
 		return IntegerHelper.toCustomerInt(bytes);
 	}
+	
+	
 
 	private int getPacketLength(byte[] source, int index) {
+		boolean isPrice =false;
 		int sessionLength = source[index
 				+ PacketContants.SessionHeaderLengthIndex];
-		int contentLength = getContentLength(source, index
-				+ PacketContants.ContentHeaderLengthIndex);
+		int contentLength;
+		int contentIndex = index + PacketContants.ContentHeaderLengthIndex;
+		if(isPrice){
+			contentLength = PriceEncoding.getContentLengthForPrice(source, contentIndex);
+		}
+		else{
+			contentLength = getContentLength(source, contentIndex);
+		}
 		return PacketContants.HeadTotalLength + sessionLength + contentLength;
 
 	}

@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -6,12 +5,9 @@ import javax.net.ssl.SSLSocket;
 
 import org.apache.log4j.Logger;
 
-import framework.time.TimeInfo;
-
 import BLL.AliveKeeper;
 import BLL.AsyncManager;
 import BLL.GetInitDataService;
-import BLL.GetTimerInfoService;
 import BLL.LoginInfoManager;
 import BLL.LoginService;
 import BLL.MsgParser;
@@ -72,6 +68,8 @@ public class TraderDemo implements Observer {
 				return;
 			}
 			this.connection.getSocket().close();
+			this.asyncManager.stop();
+			this.aliveKeeper.stop();
 			this.isClosed=true;
 		} catch (Exception e) {
 			System.out.println("close socket");
@@ -84,8 +82,8 @@ public class TraderDemo implements Observer {
 			long beginTime = System.currentTimeMillis();
 			LoginService loginService = new LoginService(this.outputStream, loginInfoManager);
 			loginService.login(loginName,password,"",appType);
-		    GetInitDataService getInitDataService=new GetInitDataService(this.outputStream,loginInfoManager);
-			getInitDataService.getInitData();
+		    //GetInitDataService getInitDataService=new GetInitDataService(this.outputStream,loginInfoManager);
+			//getInitDataService.getInitData();
 			this.aliveKeeper.addObserver(this);
 			aliveKeeper.start();
 			this.costTime = System.currentTimeMillis() - beginTime;

@@ -22,7 +22,7 @@ import framework.data.DataTableCollection;
 public class GetInitDataService {
 	private Logger logger=Logger.getLogger(GetInitDataService.class);
 	private OutputStream stream;
-	private Element result;
+	private String result;
 	private LoginInfoManager loginInfoManager;
 
 	public GetInitDataService(OutputStream stream,LoginInfoManager loginInfoManager) {
@@ -42,7 +42,7 @@ public class GetInitDataService {
 			if(signal.getIsError()){
 				return;
 			}
-			this.result=signal.getResult();
+			this.result=signal.get_contentString();
 			process(this.result);
 			//this.logger.debug(String.format("get init data method result: %s", this.result.toXML()));
 		}
@@ -56,10 +56,9 @@ public class GetInitDataService {
 	}
 	
 	
-	private void process(Element result){
+	private void process(String result){
 		
-		Element data = result.getFirstChildElement("data");
-		DataSet dataSet = XmlElementHelper.convertToDataset(data);
+		DataSet dataSet = XmlElementHelper.convertToDataSet(result);
 		DataTableCollection tables = dataSet.get_Tables();
 		DataTable table = tables.get_Item("Instrument");
 		DataRowCollection dataRowCollection = table.get_Rows();
@@ -68,16 +67,18 @@ public class GetInitDataService {
 			Guid id = (Guid)row.get_Item("ID");
 			String code = row.get_Item("Code").toString();
 			int mappingId= (Integer)row.get_Item("SequenceForQuotatoin");
-//			String rowdataString = String.format("id: %s, code: %s, mappingId: %d", id.toString(),code,mappingId);
-//			System.out.println(rowdataString);
+			String rowdataString = String.format("id: %s, code: %s, mappingId: %d", id.toString(),code,mappingId);
+			//System.out.println(rowdataString);
 		}
+		DataTable commadSequenceTable=tables.get_Item("CommandSequence");
+		DataRowCollection commandSequenceCollection=commadSequenceTable.get_Rows();
+		DataRow dRow=commandSequenceCollection.get_Item(0);
+		int commandSequence = (Integer)dRow.get_Item("CommandSequenceCol");
+		//System.out.println(commandSequence);
+		
 		
 	}
 	
-
-	public Element getResult() {
-		return this.result;
-	}
 
 	private CommunicationObject BuildCommand() {
 		Element root = new Element(RequestConstants.CommandRootName);

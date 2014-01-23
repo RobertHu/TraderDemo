@@ -13,22 +13,14 @@ public class SignalContainer {
   public SignalObject get(String key){
 	  if(this.map.containsKey(key))
 		  return this.map.get(key);
-	  else {
 		return null;
-	}
   }
   
   public void add(String key,SignalObject value){
 	  if(this.map.containsKey(key)){
-		 removeCommon(key);
+		  this.map.remove(key);
 	  }
 	  this.map.put(key, value);
-  }
-  
-  private void removeCommon(String key){
-	  SignalObject valueObject=this.map.get(key);
-	  valueObject=null;
-	  this.map.remove(key);
   }
   
   
@@ -36,7 +28,7 @@ public class SignalContainer {
 	  if(!this.map.containsKey(key)){
 		  return;
 	  }
-	  removeCommon(key);
+	  this.map.remove(key);
   }
   
   public void notifyAllSignal(){

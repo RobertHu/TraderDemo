@@ -7,6 +7,8 @@ import nu.xom.Element;
 public class SignalObject {
 	private String _invokeID;
 	private Element _result;
+	private String _contentString;
+	private boolean isKeepAliveSucess;
 	private boolean isError;
 	public synchronized String getInvokeID() {
 		return _invokeID;
@@ -33,6 +35,18 @@ public class SignalObject {
 	
 	public synchronized boolean getIsError(){
 		return this.isError;
+	}
+	public synchronized boolean isKeepAliveSucess() {
+		return isKeepAliveSucess;
+	}
+	public synchronized void setKeepAliveSucess(boolean isKeepAliveSucess) {
+		this.isKeepAliveSucess = isKeepAliveSucess;
+	}
+	public String get_contentString() {
+		return _contentString;
+	}
+	public void set_contentString(String _contentString) {
+		this._contentString = _contentString;
 	}
 	
 

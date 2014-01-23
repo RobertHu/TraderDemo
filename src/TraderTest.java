@@ -31,7 +31,7 @@ import framework.time.TimeInfo;
 
 public class TraderTest {
 	private static Logger logger = Logger.getLogger(TraderTest.class);
-	private static ArrayList<String[]> accountList = new ArrayList<>();
+	private static ArrayList<String> accountList = new ArrayList<>();
 
 	public static void main(String[] args) {
 
@@ -40,7 +40,7 @@ public class TraderTest {
 			loadAccount();
 			final Random random = new Random();
 			ExecutorService executorService = Executors.newCachedThreadPool();
-			int maxLoginClient = 1;
+			int maxLoginClient =1;
 			if (args != null && args.length > 0) {
 				maxLoginClient = Integer.parseInt(args[0]);
 			}
@@ -60,13 +60,12 @@ public class TraderTest {
 					@Override
 					public void run() {
 						try {
-
-							TraderDemo demo = new TraderDemo("ws0308", 8888);
+							TraderDemo demo = new TraderDemo("ws0210", 8888);
 							demo.start();
 							int index = random.nextInt(accountList.size());
-							String[] loginInfo = accountList.get(index);
+							String code = accountList.get(index);
 							try {
-								demo.beginTest(loginInfo[0], loginInfo[1], 7);
+								demo.beginTest("test67","12345678", 7);
 								long currentCostTime = demo.getCostTime();
 								costTimeList.add(currentCostTime);
 								if (costTimes[0] < currentCostTime) {
@@ -128,11 +127,10 @@ public class TraderTest {
 		String spliterString = ",";
 		String line = bufferedReader.readLine();
 		while (!StringHelper.IsNullOrEmpty(line)) {
-			String[] items = line.split(spliterString);
-			accountList.add(items);
+			//String[] items = line.split(spliterString);
+			accountList.add(line.trim());
 			line = bufferedReader.readLine();
 		}
-
 		bufferedReader.close();
 	}
 

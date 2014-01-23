@@ -90,14 +90,14 @@ public class AsyncManager implements Runnable {
 						process(result);
 					}
 					catch (Exception e) {
-						logger.error(e.getStackTrace());
+						logger.error("process response error",e);
 					}
 					
 
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("run method error",e);
 		}
 	}
 	
@@ -106,9 +106,8 @@ public class AsyncManager implements Runnable {
 		CommunicationObject target=null;
 		try {
 			target= PacketParser.parse(result);
-		} catch (DataFormatException e) {
-			System.out.println(String.format("data format exception %d", result.length));
-			e.printStackTrace();
+		} catch (Exception e) {
+			this.logger.error("packet parse error",e);
 		}
 		if(target==null){
 			return;
@@ -119,21 +118,37 @@ public class AsyncManager implements Runnable {
 		if (StringHelper.IsNullOrEmpty(invokeId)) {
 //			this.logger.debug("is a command");
 			if(target.getIsPrice()){
+				
 				String content= Quotation4BitEncoder.decode(target.getPrice());
+			
 				XmlNode commandsElement = buildQuotationCommand(content);
+				//logger.debug(commandsElement.get_OuterXml());
 				PriceStatisticor.DEFAULT_PRICE_STATISTICOR.addPrice();
 //				logger.info("get price");
 			
 			}
 			else{
-				this.commandQueue.add(target.getContent());
+				Element contentElement = target.getContent();
+				//System.out.println(contentElement.toXML());
+				//this.commandQueue.add(contentElement);
+				
 			}
 		} else {
 			SignalObject signal=SignalContainer.Default.get(invokeId);
 			if(signal==null){
 				return;
 			}
-			signal.setResult(target.getContent());
+			if(target.getIsKeepAlive()){
+				signal.setKeepAliveSucess(target.isKeepAliveSuccess());
+				
+			}
+			else if(target.isInitData()){
+				signal.set_contentString(target.getContentString());
+			}
+			else {
+				signal.setResult(target.getContent());
+			}
+			//logger.debug(target.getContent().toXML());
 			synchronized (signal) {
 				signal.notify();
 			}
@@ -141,16 +156,19 @@ public class AsyncManager implements Runnable {
 	}
 	
 	private XmlNode buildQuotationCommand(String content){
+		try{
 		String  startAndEndSeparator = "/";
 		String quotationSeparator = ";";
 		String fieldSeparator = ":";
 		char rowSeparator ='\n';
 		char colSeparator = '\t';
+		String commandSeparator="-";
 		String rowSeparatorString = new String(new char[]{rowSeparator});
 		String colSeparatorString = new String(new char[]{colSeparator});
 		int startIndex = content.indexOf(startAndEndSeparator);
 		int endIndex = content.lastIndexOf(startAndEndSeparator);
 		String commandSequence=content.substring(0, startIndex);
+		String[] commansSeqStrings=commandSequence.split(commandSeparator);
 		String quotationContent = content.substring(startIndex + 1 , endIndex);
 		String[] quotations =quotationContent.split(quotationSeparator); 
 		XmlDocument xmlDocument = new XmlDocument();
@@ -179,9 +197,14 @@ public class AsyncManager implements Runnable {
 		XmlElement quotationElement2 = new XmlDocument().createElement("Quotation");
 		quotationElement2.setAttribute("Overrided", sBuilder.toString());
 		commandsElement.appendChild(quotationElement2);
-		commandsElement.setAttribute("FirstSequence", commandSequence);
-		commandsElement.setAttribute("LastSequence", commandSequence);
+		commandsElement.setAttribute("FirstSequence", commansSeqStrings[0]);
+		commandsElement.setAttribute("LastSequence", commansSeqStrings[1]);
 		return commandsElement;
+		}
+		catch(Exception ex){
+			this.logger.error("parse qotation error",ex);
+			return null;
+		}
 	}
 	
 }

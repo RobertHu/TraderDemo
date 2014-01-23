@@ -19,7 +19,6 @@ import org.apache.commons.lang3.StringEscapeUtils;
 public class XmlElementHelper {
 	private static Logger logger= Logger.getLogger(XmlElementHelper.class);
 	public static Element parse(String node) throws ValidityException, ParsingException, IOException{
-		//System.out.println(node);
 		Document doc=new Builder().build(node, "");
 		Element ele=doc.getRootElement();
 		return ele;
@@ -30,21 +29,26 @@ public class XmlElementHelper {
 		element.appendChild(new Text(value));
 		return element;
 	}
-	public static XmlNode ConvertToXmlNode(Element element)
+	public static XmlNode ConvertToXmlNode(String element)
 	{
 		XmlDocument doc = new XmlDocument();
-		
-		String xml = StringEscapeUtils.unescapeXml(element.getValue());
-		//logger.debug(xml);
-		doc.loadXml(xml);
+		//logger.debug(element);
+		doc.loadXml(element);
 		//logger.debug("load complete");
 		return doc.get_DocumentElement();
+	}
+	
+	
+	public static DataSet convertToDataSet(String content){
+		DataSet ds = new DataSet();
+		ds.readXml(ConvertToXmlNode(content));
+		return ds;
 	}
 
 	public static DataSet convertToDataset(Element element)
 	{
 		DataSet ds = new DataSet();
-		ds.readXml(ConvertToXmlNode(element));
+		ds.readXml(ConvertToXmlNode(element.getValue()));
 		//logger.debug("okkkk");
 		return ds;
 	}

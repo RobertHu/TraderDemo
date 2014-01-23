@@ -1,6 +1,7 @@
 package BLL;
 
 
+import common.KeepAliveConstants;
 import common.RequestConstants;
 
 import nu.xom.Element;
@@ -11,16 +12,23 @@ import Util.XmlElementHelper;
 
 public class PacketBuilder {
 	public static byte[] Build(CommunicationObject target) {
-		if(!StringHelper.IsNullOrEmpty(target.getInvokeID())){
+		if(!StringHelper.IsNullOrEmpty(target.getInvokeID())
+		  &&(!target.getIsKeepAlive())){
 			appendInvokeIDToContent(target.getContent(), target.getInvokeID());
 		}
-		byte isPriceByte = target.getIsPrice() ? (byte) 1 : (byte) 0;
+		byte isPriceByte = target.getIsKeepAlive() ? (byte) KeepAliveConstants.KEEP_ALIVE_VALUE : (byte) 0;
 		byte[] sessionBytes = getSessionBytes(target.getSession());
-		byte[] contentBytes = getContentBytes(target.getContent().toXML());
-		
+		byte sessionLengthByte = (byte) sessionBytes.length;
+		byte[] contentBytes ;
+		if(target.getIsKeepAlive()){
+			contentBytes = getKeepAliveContentBytes(target.getInvokeID());
+		}
+		else{
+			contentBytes= getContentBytes(target.getContent().toXML());
+		}
 		byte[] contentLengthBytes = IntegerHelper
 				.toCustomerBytes(contentBytes.length);
-		byte sessionLengthByte = (byte) sessionBytes.length;
+		
 		int packetLength = PacketContants.HeadTotalLength + sessionBytes.length
 				+ contentBytes.length;
 		byte[] packet = new byte[packetLength];
@@ -39,6 +47,10 @@ public class PacketBuilder {
 	private static byte[] getSessionBytes(String session) {
 	   return PacketHelper.encode(PacketContants.SessionEncoding, session);
 	}
+	
+	private static byte[] getKeepAliveContentBytes(String content) {
+		   return PacketHelper.encode(PacketContants.SessionEncoding, content);
+		}
 
 
 	private static byte[] getContentBytes(String xml) {

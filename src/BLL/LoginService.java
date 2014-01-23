@@ -1,5 +1,6 @@
 package BLL;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
@@ -8,10 +9,17 @@ import org.apache.log4j.Logger;
 
 import common.RequestConstants;
 
+import framework.Guid;
+import framework.data.DataRow;
+import framework.data.DataRowCollection;
 import framework.data.DataSet;
+import framework.data.DataTable;
+import framework.data.DataTableCollection;
 import framework.xml.XmlNode;
 
 import nu.xom.Element;
+import nu.xom.ParsingException;
+import nu.xom.ValidityException;
 import Util.RequestCommandHelper;
 import Util.SignalHelper;
 import Util.WaitTimeoutHelper;
@@ -21,7 +29,6 @@ import XmlTest.log4jDemo;
 public class LoginService {
 	private Logger logger = Logger.getLogger(LoginService.class);
 	private OutputStream stream;
-	private Element result;
 	private LoginInfoManager loginInfoManager;
 
 	public LoginService(OutputStream stream, LoginInfoManager loginInfoManager) {
@@ -55,40 +62,53 @@ public class LoginService {
 		}
 	}
 
-	public Element getResult() {
-		return this.result;
-	}
-
-	private void process(SignalObject signal,String invokeId) {
-//		System.out.println(signal.getResult().toXML());
-		this.result = signal.getResult();
-		// logger.debug(String.format("login method result: %s",
-		// this.result.toXML()));
-		if(this.result==null){
+	private void process(SignalObject signal,String invokeId) throws ValidityException, ParsingException, IOException {
+		String data = signal.get_contentString();
+		DataSet dataSet = XmlElementHelper.convertToDataSet(data);
+		DataTableCollection tables = dataSet.get_Tables();
+		DataTable table = tables.get_Item("Instrument");
+		DataRowCollection dataRowCollection = table.get_Rows();
+		for(int row_index = 0;row_index<dataRowCollection.get_Count();row_index++){
+			DataRow row = dataRowCollection.get_Item(row_index);
+			Guid id = (Guid)row.get_Item("ID");
+			String code = row.get_Item("Code").toString();
+			int mappingId= (Integer)row.get_Item("SequenceForQuotatoin");
+			String rowdataString = String.format("id: %s, code: %s, mappingId: %d", id.toString(),code,mappingId);
+			//System.out.println(rowdataString);
+		}
+		DataTable commadSequenceTable=tables.get_Item("CommandSequence");
+		DataRowCollection commandSequenceCollection=commadSequenceTable.get_Rows();
+		DataRow dRow=commandSequenceCollection.get_Item(0);
+		int commandSequence = (Integer)dRow.get_Item("CommandSequenceCol");
+		
+		
+		DataTable loginTable=tables.get_Item("LoginTable");
+		DataRowCollection loginDataRowCollection = loginTable.get_Rows();
+		DataRow loginRow = loginDataRowCollection.get_Item(0);
+		String loginDataString = (String)loginRow.get_Item("LoginColumn");
+		Element result =  XmlElementHelper.parse(loginDataString);
+		
+		if(result==null){
 			System.out.println("login error");
 			this.logger.error("login error invokeid "+invokeId);
 			return;
 		}
-		String session = this.result
+		String session = result
 				.getFirstChildElement("session").getValue();
-		
-		//String session = this.result.getFirstChildElement("Settings").getAttributeValue("SessionId");
 
 		this.loginInfoManager.setSession(session);
-		Element targetElement = this.result
+		Element targetElement = result
 				.getFirstChildElement("recoverPasswordData");
 		if (targetElement != null) {
-			DataSet dataSet = XmlElementHelper.convertToDataset(targetElement);
+			DataSet dataSet2 = XmlElementHelper.convertToDataset(targetElement);
 		}
-		Element accountEle = this.result
+		Element accountEle = result
 				.getFirstChildElement("tradingAccountData");
 		if (accountEle != null) {
-			// this.logger.debug("account data is not empty");
 			DataSet accountData = XmlElementHelper.convertToDataset(accountEle);
 		} else {
-			// this.logger.debug("account data is empty");
-		}
-		// System.out.println("login over");
+		
+		};
 		SignalContainer.Default.remove(signal.getInvokeID());
 
 	}

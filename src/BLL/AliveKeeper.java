@@ -22,9 +22,10 @@ public class AliveKeeper implements Runnable {
 	private List<Observer> observers = new ArrayList<>();
 	private int sleepTime = 10000;
 	private int exceptionCount = 0;
-	private final String expectedResult = "1";
 	private LoginInfoManager loginInfoManager;
 	private OutputStream outputStream;
+	private volatile boolean isStoped=false;
+	
 	private Logger logger = Logger.getLogger(AliveKeeper.class);
 
 	public AliveKeeper(OutputStream outputStream,
@@ -42,9 +43,18 @@ public class AliveKeeper implements Runnable {
 			e.printStackTrace();
 		}
 	}
+	
+	public void stop()
+	{
+		this.isStoped=true;
+	}
 
 	public void run() {
 		while (true) {
+			if(this.isStoped)
+			{
+				break;
+			}
 			try {
 				TimeUnit.MILLISECONDS.sleep(this.sleepTime);
 				long beginTime = System.currentTimeMillis();
@@ -53,25 +63,19 @@ public class AliveKeeper implements Runnable {
 						.currentTimeMillis() - beginTime);
 				if (signalObject.getIsError()) {
 					reset();
-					continue;
 				}
-				Element result = signalObject.getResult();
-				if (result == null) {
-					this.fireConnectionBroken();
-					break;
+				else{
+					boolean result = signalObject.isKeepAliveSucess();
+					if (!result) {
+						this.fireConnectionBroken();
+						break;
+					}
+					if(this.exceptionCount!=0){
+						reset();
+					}
 				}
-				String valueString = result.getFirstChildElement(
-						ResponseConstants.SINGLERESULTCONTENTNODENAME_STRING)
-						.getValue();
-				if (!valueString.equals(expectedResult)) {
-					this.fireConnectionBroken();
-					break;
-				}
-				reset();
 			}
-
 			catch (Exception e) {
-				e.printStackTrace();
 				this.exceptionCount++;
 				if (this.exceptionCount >= 3) {
 					this.fireConnectionBroken();
@@ -84,14 +88,13 @@ public class AliveKeeper implements Runnable {
 
 	private SignalObject request() throws IOException, WaitTimeoutException,
 			InterruptedException {
-		Element root = new Element(RequestConstants.CommandRootName);
 		CommunicationObject request = RequestCommandHelper.NewCommand(
-				this.loginInfoManager.getSession(), "KeepAlive", root);
+				this.loginInfoManager.getSession(), null, null);
+		request.setIsKeepAlive(true);
 		try {
 			byte[] packet = PacketBuilder.Build(request);
 			SignalObject signalObject = SignalHelper.Add(request.getInvokeID());
 			this.outputStream.write(packet);
-			this.outputStream.flush();
 			WaitTimeoutHelper.wait(signalObject);
 			return signalObject;
 
@@ -115,6 +118,7 @@ public class AliveKeeper implements Runnable {
 		for (Observer observer : this.observers) {
 			observer.connectionBroken();
 		}
+		this.observers.clear();
 	}
 
 	public synchronized void addObserver(Observer observer) {
